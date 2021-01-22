@@ -1,0 +1,241 @@
+Summary Analysis
+84% of all players are male and male purchase more in total compared with other gender. 
+However, if we see the average purchase per person per gender, male purchased the least compared with other gender per person.
+In terms of age group, the highest number of players are within the range of 20-24 years old (258 out of 576 players). 
+This age group also has the highest number of purchase count (365 out of 780 purchases).
+The player "Lisosia93" spent the most out of all players (there are a total of 576 players).
+Item ID "178", Item Name "Oathbreaker, Last Hope of the Breaking Storm" was the most popular and most profitable items compared with other items 
+(there are 183 unique items).
+
+# Dependencies and Setup
+import pandas as pd
+import numpy as np
+
+# File to Load (Remember to Change These)
+file_to_load = "Resources/purchase_data.csv"
+
+# Read Purchasing File and store into Pandas data frame
+purchase_data_df = pd.read_csv(file_to_load)
+purchase_data_df.head()
+
+
+# Player Count
+# Count the total number of players
+# list players
+players = purchase_data_df["SN"].unique()
+
+players_count = len(players)
+
+# Print total number of players count 
+purchase_data_df = pd.DataFrame({"Total Players": [players_count]})
+purchase_data_df
+
+#Purchasing Analysis (Total)
+# Count number of unique items
+items = purchase_data_df["Item ID"].unique()
+items_count = len(items)
+print(items_count)
+
+# Calculate the average purchase price
+avg_price = purchase_data_df["Price"].mean()
+avg_price = round(purchase_data_df["Price"].mean(),2)
+print (avg_price)
+
+# Count the total number of purchases
+purchase_count = len(purchase_data_df["Purchase ID"])
+print(purchase_count)
+
+#Calculate total revenue
+revenue = purchase_data_df["Price"].sum()
+print(revenue)
+
+#write to the new dataframe
+summary_df = pd.DataFrame([[items_count,avg_price,purchase_count,revenue]])
+summary_df.columns = [["Number of Unique Items","Average Price","Number of Purchases","Total Revenue"]]
+
+summary_df
+
+
+
+Gender Demographics
+# Calculate the count and percentage of players for each genders
+player_by_gender = purchase_data_df.groupby("Gender")["SN"].nunique()
+
+#write to the new dataframe
+player_by_gender_df = pd.DataFrame({"Total Count": player_by_gender})
+
+# calculating percentage 
+player_percentage = (player_by_gender_df["Total Count"] / player_by_gender_df["Total Count"].sum()) * 100
+
+player_by_gender_df["Percentage of Players"] = player_percentage
+player_by_gender_df
+
+
+Purchasing Analysis (Gender)
+# Counting/calculating purchase count by each gender
+purchase_by_gender = purchase_data_df.groupby("Gender")["Purchase ID"].count()
+purchase_by_gender
+
+# write from Purchase ID to Purchase Count to the new dataframe
+purchase_by_gender_df = pd.DataFrame({"Purchase Count": purchase_by_gender})
+purchase_by_gender_df
+
+# Calculating Average Purchase Price by each gender
+avg_purchase_by_gender = purchase_data_df.groupby("Gender")["Price"].mean()
+purchase_by_gender_df["Average Purchase_Price"] = avg_purchase_by_gender.map("${0:.2f}".format)
+purchase_by_gender_df
+
+
+# Calculate total Purchase Price by each gender
+total_price_by_gender = purchase_data_df.groupby("Gender")["Price"].sum()
+purchase_by_gender_df["Purchase per Person"] = total_price_by_gender.map("${0:.2f}".format)
+purchase_by_gender_df
+
+# Calculate the average total purchase per person by each genders
+
+# first Calculate the Total Purchase per Person 
+purchase_by_person = purchase_data_df.groupby("SN")["Price"].sum()
+purchase_by_person_df = pd.DataFrame({"Total Purchase Per Person": purchase_by_person})
+# Second map the gender for each person
+merge_gender = purchase_by_person_df.merge(purchase_data_df[["SN","Gender"]], on = "SN")
+merge_gender_no_dup = merge_gender.drop_duplicates(subset="SN", keep="first")
+
+# Third to calculate the average total purchase per person by each gender
+purchase_per_person_by_gender = merge_gender_no_dup.groupby("Gender")["Total Purchase Per Person"]. mean()
+purchase_per_person_by_gender
+
+# Formatting the summary
+purchase_by_gender_df["Average Total Purchase Per Person"] = purchase_per_person_by_gender.map("${0:.2f}".format)
+purchase_by_gender_df
+
+
+Age Demographics
+# Finding the maximum age group from data
+purchase_data_df["Age"].max()
+
+# Assign the data to different bins depending on 4 years age range
+
+# Create the bins in which the data will be held
+age_bins = [0, 9.90, 14.90, 19.90, 24.90, 29.90, 34.90, 39.90, 50]
+
+# Create the names for the bins
+age_group_name = ["<10", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40+"]
+
+# Assign the age group to the data
+purchase_data_df["Age Group"] = pd.cut(purchase_data_df["Age"], age_bins, labels = age_group_name)
+purchase_data_df
+
+# Group the data frame by age group
+age_group = purchase_data_df.groupby("Age Group")
+# Count the number of players by age group
+player_by_age_group = purchase_data_df.groupby("Age Group")["SN"].nunique()
+# player_by_age_group
+
+player_by_age_group_df = pd.DataFrame({"Total Count": player_by_age_group})
+player_by_age_group_df
+
+# Calculate the percentage of players by age group
+player_percentage_by_age_group = (player_by_age_group_df["Total Count"] / player_by_age_group_df["Total Count"].sum()) * 100
+player_by_age_group_df["Percentage of Players"] = player_percentage_by_age_group.map("{:.2f}%".format)
+player_by_age_group_df
+
+
+Purchasing Analysis (Age)
+
+# Group the dataframe by age group
+age_group = purchase_data_df.groupby("Age Group")
+
+# calculate the purchase count by age group
+purchase_by_age = age_group["Purchase ID"].count()
+
+# Calculate the avergae purchase price by age group
+avg_purchase_by_age = age_group["Price"].mean()
+
+# Calculate the total purchase price by age group
+total_price_by_age = age_group["Price"].sum()
+
+# summarize the table with new dataframe
+age_group_df = pd.DataFrame({"Purchase Count": purchase_by_age,
+                            "Average Purchase Price": avg_purchase_by_age,
+                            "Total Purchase Value": total_price_by_age })
+age_group_df
+
+# calculate the avg. purchase total per person by age group
+purchase_per_person_by_age = age_group_df["Total Purchase Value"]/player_by_age_group_df["Total Count"]
+age_group_df["Average Total Purchase per Person"] = purchase_per_person_by_age
+age_group_df = age_group_df.loc[:,["Purchase Count", "Average Purchase Price","Total Purchase Value", "Average Total Purchase per Person"]]
+
+# formatting the data 
+age_group_df["Purchase Count"] = age_group_df["Purchase Count"].map("{:,.2f}".format)
+age_group_df["Average Purchase Price"] = age_group_df["Average Purchase Price"].map("${:,.2f}".format)
+age_group_df["Total Purchase Value"] = age_group_df["Total Purchase Value"].map("${:,.2f}".format)
+age_group_df["Average Total Purchase per Person"] = age_group_df["Average Total Purchase per Person"].map("${:,.2f}".format)
+age_group_df
+
+Top Spenders
+# Calculate the total purchase value for each person
+total_purchase_per_person = purchase_data_df.groupby("SN")["Price"].sum()
+
+# Calculate the average purchase price for each person
+avg_purchase_per_person = purchase_data_df.groupby("SN")["Price"].mean()
+
+# Count the number of purchase ID per person
+count_purchase_per_person = purchase_data_df.groupby("SN")["Purchase ID"].count()
+
+purchase_per_person_df = pd.DataFrame({"Purchase Count": count_purchase_per_person,
+                                      "Average Purchase Price": avg_purchase_per_person,
+                                      "Total Purchase Value": total_purchase_per_person})
+
+# Sort the data frame by the highest total purchase price and format values
+sort_by_total_price = purchase_per_person_df.sort_values("Total Purchase Value", ascending = False)
+sort_by_total_price["Average Purchase Price"] = sort_by_total_price["Average Purchase Price"].map("${:,.2f}".format)
+sort_by_total_price["Total Purchase Value"] = sort_by_total_price["Total Purchase Value"].map("${:,.2f}".format)
+sort_by_total_price = sort_by_total_price.loc[:, ["Purchase Count", "Average Purchase Price", "Total Purchase Value"]].head(5)
+sort_by_total_price
+
+
+Most Popular Items
+# Group data frame by Item ID and Item Name
+item_groups = purchase_data_df.groupby(["Item ID", "Item Name"])
+
+# Count the number of purchase by Item ID and Name
+purchase_by_item = item_groups["Purchase ID"].count()
+purchase_by_item_df = pd.DataFrame({"Purchase Count": purchase_by_item})
+# purchase_by_item_df
+
+# Add item price to the data
+merge_item_price = purchase_by_item_df.merge(purchase_data_df[["Item ID", "Item Name", "Price"]], on = "Item Name")
+merge_item_price_no_dup = merge_item_price.drop_duplicates(subset = "Item Name", keep = "first")
+# merge_item_price_no_dup
+
+# Group Item ID and Item Name with individual item price
+item_price = merge_item_price_no_dup.groupby(["Item ID", "Item Name"])["Price"].sum()
+
+# Calculate the total purchase value by Item ID and Name
+total_price_by_item = item_groups["Price"].sum()
+# total_price_by_item
+
+# Print in summary table
+purchase_by_item_df["Item Price"] = item_price
+purchase_by_item_df["Total Purchase Value"] = total_price_by_item
+# purchase_by_item_df
+
+# Sort the data frame by the 5 most popular items by purchase count and format the values
+sort_by_purchase_count = purchase_by_item_df.nlargest(5, "Purchase Count")
+sort_by_purchase_count["Item Price"] = sort_by_purchase_count["Item Price"].map("${:,.2f}".format)
+sort_by_purchase_count["Total Purchase Value"] = sort_by_purchase_count["Total Purchase Value"].map("${:,.2f}".format)
+sort_by_purchase_count = sort_by_purchase_count.loc[:, ["Purchase Count", "Item Price", "Total Purchase Value"]]
+sort_by_purchase_count
+
+Most Profitable Items
+
+# Recall purchase by item data frame, and convert total purchase value back to float
+# purchase_by_item_df["Total Purchase Value"] = total_price_by_item
+# purchase_by_item_df
+
+# Sort the summary data of 'Purchase by Item' by total purchase value and format the values
+sort_by_total_purchase = purchase_by_item_df.nlargest(5, "Total Purchase Value")
+sort_by_total_purchase["Item Price"] = sort_by_total_purchase["Item Price"].map("${:,.2f}".format)
+sort_by_total_purchase["Total Purchase Value"] = sort_by_total_purchase["Total Purchase Value"].map("${:,.2f}".format)
+sort_by_total_purchase = sort_by_total_purchase.loc[:, ["Purchase Count", "Item Price", "Total Purchase Value"]]
+sort_by_total_purchase
